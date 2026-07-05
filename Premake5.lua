@@ -107,5 +107,6 @@ project 'csv'
     }
 
     files {
-        'lua/csv_core.c', 
+        'lua/*.h', 
+        'lua/*.c', 
     }

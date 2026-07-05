@@ -72,10 +72,10 @@ csv-parser-ragel/
 
 ### 1. 编译 Ragel 状态机
 
-如果你修改了 `src/csv_parser.rl` 的语法规则，请使用 Ragel 的 `-G2` 参数（生成极速 `goto` 转移代码）将其编译为 C 源码：
+如果你修改了 `parser/csv_parser.rl` 的语法规则，请使用 Ragel 的 `-G2` 参数（生成极速 `goto` 转移代码）将其编译为 C 源码：
 
 ```bash
-ragel -G2 -C src/csv_parser.rl -o src/csv_parser.c
+ragel -G2 -C parser/csv_parser.rl -o parser/csv_parser.c
 
 ```
 
@@ -85,7 +85,7 @@ ragel -G2 -C src/csv_parser.rl -o src/csv_parser.c
 
 ```cmd
 :: 编译命令行测试工具
-cl /TC /O2 /EHsc /I"src" test/test.c src/csv_parser.c /Fe:test_csv.exe
+cl /TC /O2 /EHsc /I"parser" test/test.c parser/csv_parser.c /Fe:test_csv.exe
 
 :: 运行测试：加载游戏屏蔽词表
 test_csv.exe dirty_words.csv

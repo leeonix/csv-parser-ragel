@@ -1,5 +1,5 @@
 
-#line 1 "../src/csv_parser.rl"
+#line 1 "../parser/csv_parser.rl"
 /*
  * =====================================================================================
  * Filename:  csv_parser.rl
@@ -82,7 +82,7 @@ static size_t clean_quoted_field(char *str, size_t len) {
 }
 
 
-#line 83 "../src/csv_parser.c"
+#line 83 "../parser/csv_parser.c"
 static const int csv_parser_start = 6;
 static const int csv_parser_first_final = 6;
 static const int csv_parser_error = 0;
@@ -90,7 +90,7 @@ static const int csv_parser_error = 0;
 static const int csv_parser_en_main = 6;
 
 
-#line 170 "../src/csv_parser.rl"
+#line 170 "../parser/csv_parser.rl"
 
 
 /*
@@ -115,14 +115,14 @@ int csv_parse_buffer(const char *buf, size_t len, csv_cell_cb cb, void *ctx) {
 
     /* 触发 Ragel 内部变量初始化与核心执行网络 */
     
-#line 112 "../src/csv_parser.c"
+#line 112 "../parser/csv_parser.c"
 	{
 	( s->cs) = csv_parser_start;
 	}
 
-#line 194 "../src/csv_parser.rl"
+#line 194 "../parser/csv_parser.rl"
     
-#line 115 "../src/csv_parser.c"
+#line 115 "../parser/csv_parser.c"
 	{
 	if ( p == pe )
 		goto _test_eof;
@@ -137,19 +137,19 @@ case 6:
 	}
 	goto tr10;
 tr10:
-#line 100 "../src/csv_parser.rl"
+#line 100 "../parser/csv_parser.rl"
 	{ 
         s->ts = p;       /* 踩点：记录字段起始内存指针 */
         s->is_quoted = 0;  /* 标记：当前为纯裸文本字段 */
     }
 	goto st7;
 tr16:
-#line 145 "../src/csv_parser.rl"
+#line 145 "../parser/csv_parser.rl"
 	{
         s->row_idx++;
         s->col_idx = 0;
     }
-#line 100 "../src/csv_parser.rl"
+#line 100 "../parser/csv_parser.rl"
 	{ 
         s->ts = p;       /* 踩点：记录字段起始内存指针 */
         s->is_quoted = 0;  /* 标记：当前为纯裸文本字段 */
@@ -159,7 +159,7 @@ st7:
 	if ( ++p == pe )
 		goto _test_eof7;
 case 7:
-#line 148 "../src/csv_parser.c"
+#line 148 "../parser/csv_parser.c"
 	switch( (*p) ) {
 		case 10: goto tr11;
 		case 13: goto tr12;
@@ -168,7 +168,7 @@ case 7:
 	}
 	goto st7;
 tr11:
-#line 117 "../src/csv_parser.rl"
+#line 117 "../parser/csv_parser.rl"
 	{
         /* [C89 规范] 动作块内部同样需要遵循 C89 守则，把局部变量声明提至第一行 */
         size_t len = 0;
@@ -197,12 +197,12 @@ tr11:
     }
 	goto st8;
 tr17:
-#line 145 "../src/csv_parser.rl"
+#line 145 "../parser/csv_parser.rl"
 	{
         s->row_idx++;
         s->col_idx = 0;
     }
-#line 117 "../src/csv_parser.rl"
+#line 117 "../parser/csv_parser.rl"
 	{
         /* [C89 规范] 动作块内部同样需要遵循 C89 守则，把局部变量声明提至第一行 */
         size_t len = 0;
@@ -234,7 +234,7 @@ st8:
 	if ( ++p == pe )
 		goto _test_eof8;
 case 8:
-#line 219 "../src/csv_parser.c"
+#line 219 "../parser/csv_parser.c"
 	switch( (*p) ) {
 		case 10: goto tr17;
 		case 13: goto tr18;
@@ -243,7 +243,7 @@ case 8:
 	}
 	goto tr16;
 tr12:
-#line 117 "../src/csv_parser.rl"
+#line 117 "../parser/csv_parser.rl"
 	{
         /* [C89 规范] 动作块内部同样需要遵循 C89 守则，把局部变量声明提至第一行 */
         size_t len = 0;
@@ -272,12 +272,12 @@ tr12:
     }
 	goto st1;
 tr18:
-#line 145 "../src/csv_parser.rl"
+#line 145 "../parser/csv_parser.rl"
 	{
         s->row_idx++;
         s->col_idx = 0;
     }
-#line 117 "../src/csv_parser.rl"
+#line 117 "../parser/csv_parser.rl"
 	{
         /* [C89 规范] 动作块内部同样需要遵循 C89 守则，把局部变量声明提至第一行 */
         size_t len = 0;
@@ -309,7 +309,7 @@ st1:
 	if ( ++p == pe )
 		goto _test_eof1;
 case 1:
-#line 290 "../src/csv_parser.c"
+#line 290 "../parser/csv_parser.c"
 	if ( (*p) == 10 )
 		goto st8;
 	goto st0;
@@ -317,11 +317,11 @@ st0:
 ( s->cs) = 0;
 	goto _out;
 tr4:
-#line 106 "../src/csv_parser.rl"
+#line 106 "../parser/csv_parser.rl"
 	{ s->has_escapes = 1; }
 	goto st2;
 tr13:
-#line 107 "../src/csv_parser.rl"
+#line 107 "../parser/csv_parser.rl"
 	{ 
         s->ts = p + 1;   /* 踩点：跳过最外侧起始左双引号 '"' */
         s->is_quoted = 1;  /* 标记：当前为双引号包围字段 */
@@ -329,12 +329,12 @@ tr13:
     }
 	goto st2;
 tr19:
-#line 145 "../src/csv_parser.rl"
+#line 145 "../parser/csv_parser.rl"
 	{
         s->row_idx++;
         s->col_idx = 0;
     }
-#line 107 "../src/csv_parser.rl"
+#line 107 "../parser/csv_parser.rl"
 	{ 
         s->ts = p + 1;   /* 踩点：跳过最外侧起始左双引号 '"' */
         s->is_quoted = 1;  /* 标记：当前为双引号包围字段 */
@@ -345,21 +345,21 @@ st2:
 	if ( ++p == pe )
 		goto _test_eof2;
 case 2:
-#line 321 "../src/csv_parser.c"
+#line 321 "../parser/csv_parser.c"
 	switch( (*p) ) {
 		case 0: goto st0;
 		case 34: goto st9;
 	}
 	goto st2;
 tr5:
-#line 106 "../src/csv_parser.rl"
+#line 106 "../parser/csv_parser.rl"
 	{ s->has_escapes = 1; }
 	goto st9;
 st9:
 	if ( ++p == pe )
 		goto _test_eof9;
 case 9:
-#line 333 "../src/csv_parser.c"
+#line 333 "../parser/csv_parser.c"
 	switch( (*p) ) {
 		case 10: goto tr11;
 		case 13: goto tr12;
@@ -377,7 +377,7 @@ case 3:
 	}
 	goto tr4;
 tr14:
-#line 117 "../src/csv_parser.rl"
+#line 117 "../parser/csv_parser.rl"
 	{
         /* [C89 规范] 动作块内部同样需要遵循 C89 守则，把局部变量声明提至第一行 */
         size_t len = 0;
@@ -406,12 +406,12 @@ tr14:
     }
 	goto st10;
 tr20:
-#line 145 "../src/csv_parser.rl"
+#line 145 "../parser/csv_parser.rl"
 	{
         s->row_idx++;
         s->col_idx = 0;
     }
-#line 117 "../src/csv_parser.rl"
+#line 117 "../parser/csv_parser.rl"
 	{
         /* [C89 规范] 动作块内部同样需要遵循 C89 守则，把局部变量声明提至第一行 */
         size_t len = 0;
@@ -443,7 +443,7 @@ st10:
 	if ( ++p == pe )
 		goto _test_eof10;
 case 10:
-#line 413 "../src/csv_parser.c"
+#line 413 "../parser/csv_parser.c"
 	switch( (*p) ) {
 		case 10: goto tr11;
 		case 13: goto tr12;
@@ -452,7 +452,7 @@ case 10:
 	}
 	goto tr22;
 tr22:
-#line 100 "../src/csv_parser.rl"
+#line 100 "../parser/csv_parser.rl"
 	{ 
         s->ts = p;       /* 踩点：记录字段起始内存指针 */
         s->is_quoted = 0;  /* 标记：当前为纯裸文本字段 */
@@ -462,7 +462,7 @@ st11:
 	if ( ++p == pe )
 		goto _test_eof11;
 case 11:
-#line 430 "../src/csv_parser.c"
+#line 430 "../parser/csv_parser.c"
 	switch( (*p) ) {
 		case 10: goto tr11;
 		case 13: goto tr12;
@@ -471,11 +471,11 @@ case 11:
 	}
 	goto st11;
 tr8:
-#line 106 "../src/csv_parser.rl"
+#line 106 "../parser/csv_parser.rl"
 	{ s->has_escapes = 1; }
 	goto st4;
 tr23:
-#line 107 "../src/csv_parser.rl"
+#line 107 "../parser/csv_parser.rl"
 	{ 
         s->ts = p + 1;   /* 踩点：跳过最外侧起始左双引号 '"' */
         s->is_quoted = 1;  /* 标记：当前为双引号包围字段 */
@@ -486,21 +486,21 @@ st4:
 	if ( ++p == pe )
 		goto _test_eof4;
 case 4:
-#line 451 "../src/csv_parser.c"
+#line 451 "../parser/csv_parser.c"
 	switch( (*p) ) {
 		case 0: goto st0;
 		case 34: goto st12;
 	}
 	goto st4;
 tr9:
-#line 106 "../src/csv_parser.rl"
+#line 106 "../parser/csv_parser.rl"
 	{ s->has_escapes = 1; }
 	goto st12;
 st12:
 	if ( ++p == pe )
 		goto _test_eof12;
 case 12:
-#line 463 "../src/csv_parser.c"
+#line 463 "../parser/csv_parser.c"
 	switch( (*p) ) {
 		case 10: goto tr11;
 		case 13: goto tr12;
@@ -537,7 +537,7 @@ case 5:
 	case 7: 
 	case 8: 
 	case 9: 
-#line 145 "../src/csv_parser.rl"
+#line 145 "../parser/csv_parser.rl"
 	{
         s->row_idx++;
         s->col_idx = 0;
@@ -546,7 +546,7 @@ case 5:
 	case 10: 
 	case 11: 
 	case 12: 
-#line 117 "../src/csv_parser.rl"
+#line 117 "../parser/csv_parser.rl"
 	{
         /* [C89 规范] 动作块内部同样需要遵循 C89 守则，把局部变量声明提至第一行 */
         size_t len = 0;
@@ -573,20 +573,20 @@ case 5:
         s->col_idx++;      /* 列计数器自增 */
         s->ts = NULL;      /* 重置切片游标，准备迎接下一列 */
     }
-#line 145 "../src/csv_parser.rl"
+#line 145 "../parser/csv_parser.rl"
 	{
         s->row_idx++;
         s->col_idx = 0;
     }
 	break;
-#line 538 "../src/csv_parser.c"
+#line 538 "../parser/csv_parser.c"
 	}
 	}
 
 	_out: {}
 	}
 
-#line 195 "../src/csv_parser.rl"
+#line 195 "../parser/csv_parser.rl"
 
     /*
      * 核心安全校验：判断状态机最终落点

@@ -6,7 +6,6 @@ solution 'csv'
     flags { 'StaticRuntime', 'NoManifest', }
 
     location 'build'
-    targetdir 'bin'
     objdir 'obj'
 
     filter { 'action:vs*' }
@@ -22,32 +21,37 @@ solution 'csv'
         defines { 'NDEBUG' }
         optimize 'Full'
 
-project 'csv'
+project 'csv_parser'
     kind 'StaticLib'
+    targetdir 'lib'
 
     includedirs {
-        'src',
+        'parser',
     }
 
     files {
-        'src/csv_parser.h',
-        'src/csv_parser.c',
---        'src/csv_parser.rl',
+        'parser/csv_parser.h',
+        'parser/csv_parser.c',
+--        'parser/csv_parser.rl',
     }
 
     prebuildcommands {
         '@echo on',
-        "ragel -C -G2 ../src/csv_parser.rl",
+        "ragel -C -G2 ../parser/csv_parser.rl",
     }
 
 project 'test'
     kind 'ConsoleApp'
+    targetdir 'bin'
 
     includedirs {
-        'src',
+        'parser',
+    }
+    libdirs {
+        'lib',
     }
     links {
-        'csv',
+        'csv_parser',
     }
 
     files {
@@ -64,15 +68,14 @@ project 'wlx_csv'
 --    targetdir '$(COMMANDER_PATH)/Plugins/wlx/csv'
     
     includedirs {
-        'src',
+        'parser',
     }
     links {
-        'csv',
+        'csv_parser',
     }
 
     files {
-        'src/csv_parser.h',
-        'src/csv_parser.c',
+        'parser/csv_parser.h',
         'wlx/listplug.h',
         'wlx/listplug.def',
         'wlx/wlx_csv.c',
@@ -85,3 +88,24 @@ project 'wlx_csv'
         debugdir '$(TargetDir)'
         debugcommand '$(COMMANDER_PATH)/TOTALCMD.EXE'
 
+project 'csv'
+    kind 'SharedLib'
+    targetdir 'bin'
+
+    defines { 'LUA_BUILD_AS_DLL', 'LUA_LIB' }
+
+    includedirs {
+        'include',
+        'parser',
+    }
+    libdirs {
+        'lib',
+    }
+    links {
+        'csv_parser',
+        'lua5.1',
+    }
+
+    files {
+        'lua/csv_core.c', 
+    }

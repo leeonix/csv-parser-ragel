@@ -1,175 +1,170 @@
-# 🚀 High-Performance Ragel CSV Parser & Total Commander Lister Plugin
+# 🚀 High-Performance Ragel CSV Parser & Ecosystem
 
-![Language](https://img.shields.io/badge/Language-C89%20%2F%20Ragel-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-Win32%20%2F%20Linux%20%2F%20Lua-green.svg)
-![Build](https://img.shields.io/badge/Build-VS2010%20%2F%20GCC-brightgreen.svg)
+![Language](https://img.shields.io/badge/Language-C89%20%2F%20Lua%20%2F%20Ragel-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-Win32%20%2F%20Linux-green.svg)
+![Build](https://img.shields.io/badge/Build-Premake5%20%2F%20VS2010%20%2F%20GCC-brightgreen.svg)
 ![License](https://img.shields.io/badge/License-MIT-orange.svg)
 
-本项目包含一个工业级、高性能的纯 **Ragel 状态机 CSV 解析引擎** (`csv_parser`)，以及基于该引擎研发的 **Total Commander Lister (`.wlx`) 预览插件** (`wlx_csv`)。
+本项目是一个工业级、极致性能的 **纯 Ragel 状态机 CSV 解析引擎 (`csv_parser`)**，并围绕该引擎构建了多线程安全的 **Lua 5.1+ C-API 绑定库** 以及 **Total Commander Lister (`.wlx`) 极速预览插件**。
 
-本项目最早始于 2013 年，于 2026 年进行了彻底的底层重构与现代工程化升级。专为极速吞吐、复杂游戏配置表（如 3000+ 行带有复杂双引号、正则、网址的敏感词/屏蔽词库）加载、以及大文件瞬间可视化预览而设计。
-
----
-
-## 目录 (Table of Contents)
-
-- [✨ 核心特性 (Features)](#-核心特性-features)
-  - [1. 纯状态机 CSV 解析引擎 (csv_parser)](#1-纯状态机-csv-解析引擎-csv_parser)
-  - [2. Total Commander 查看器插件 (wlx_csv)](#2-total-commander-查看器插件-wlx_csv)
-- [📦 项目结构 (Project Structure)](#-项目结构-project-structure)
-- [🛠️ 编译与构建 (Build & Compile)](#-编译与构建-build--compile)
-  - [编译 Ragel 状态机](#1-编译-ragel-状态机)
-  - [使用 MSVC / VS2010 编译](#2-使用-msvc--vs2010-编译)
-- [💻 API 与接入指南 (API & Usage)](#-api-与接入指南-api--usage)
-  - [C 语言基础调用](#c-语言基础调用)
-  - [绑定 Lua 虚拟机 / 前缀树](#绑定-lua-虚拟机--前缀树)
-- [📊 性能表现 (Performance)](#-性能表现-performance)
-- [📄 许可证 (License)](#-许可证-license)
+项目专注于解决游戏服务器海量配置表（如 3000+ 行带有复杂正则、网址、双重转义引号的敏感词/屏蔽词库）的极速加载、零 GC 消耗清洗，以及大文件在桌面端的毫秒级无损可视化预览。
 
 ---
 
-## ✨ 核心特性 (Features)
+## ✨ 核心架构亮点
 
-### 1. 纯状态机 CSV 解析引擎 (`csv_parser`)
+### 1. 纯状态机驱动与零拷贝洗净 (Core Engine)
+* **LL(1) 纯转移指令网络**：彻底抛弃 Ragel 传统的 Scanner (`|* ... *|`) 回溯模式，使用标准进入 (`>`)、离开 (`%`) 与立即动作，结合 `-G2` 生成底层 `goto` 跳转代码，将 CPU 指令流与寄存器缓存压榨至极限，内存解析耗时仅需**微秒级 (μs)**。
+* **快慢指针原地脱壳 (Zero-Copy Unescape)**：针对 CSV 中棘手的 `""` 转义（如 `""http://xxx.com/""`），独创在原生读取 Buffer 上通过快慢指针**原地覆盖覆写**的算法。完全不申请临时堆内存，**零 Malloc 碎块、零 GC 压力**。
+* **100% C89 / VS2010 严格兼容**：所有变量声明严格置于作用域块顶部，消除了跨平台编译的所有警告与字符集（UTF-8 with BOM）报错。
 
-* 🔥 **纯状态机驱动 (Pure LL(1) State Machine)**：彻底摒弃 Ragel 的 Scanner (`|* ... *|`) 模式与冗余回溯指令。使用标准进入 (`>`)、离开 (`%`) 与立即 (`%`) 动作，极致压榨 CPU 指令流水线与寄存器缓存，内核解析耗时压至**微秒级 (μs)**！
-* ⚡ **零拷贝原地清洗 (Zero-Copy In-Place Unescape)**：针对复杂 CSV 字段中嵌套的 `""` 转义（如 `""http://xxx.com/""`），独创**快慢指针原地洗净算法**。在底层 Buffer 内存中直接覆盖替换为标准 `"`，**零临时字符串分配、零 GC 压力、零 Malloc 碎块**！
-* 🛡️ **严格文法分流，编译零警告 (Zero Warnings)**：将“以 CRLF 结束的标准行 (`std_row`)”与“无换行的文件末尾尾行 (`tail_row`)”独立隔离定义，彻底消除了 Kleene 星号在零长度词上的无限循环警告；集成 `_first_final` 终态校验，能够精准识别文件截断或语法破损。
-* 💾 **动态堆缓冲机制**：废除老旧的 4KB 静态缓冲限制，采用 `fseek/ftell` 动态探知文件大小并一次性分配恰好够用的内存块，彻底解除了大字段（多行文本、广告词、内嵌 JSON）引发的卡死雷区。
-* 🔌 **线程安全与上下文闭包 (`void *ctx`)**：API 开放自定义上下文指针，可多线程并发实例加载，无缝传递 `lua_State*` 或 AC 自动机 / Trie 前缀树根指针。
-* 🏛️ **100% C89 & VS2010 兼容**：严格遵循 ANSI C (C89) 变量顶格声明规范，源文件采用 `UTF-8 with BOM` 签名，在 MSVC / VS2010 下编译**零报错、零乱码**。
+### 2. 多线程安全 Lua 绑定 (Lua Ecosystem)
+* **TLS 线程局部存储桥接**：在不需要修改底层原有参数回调接口的前提下，通过 C 语言 TLS（`__thread` / `__declspec(thread)`）优雅传递 `lua_State*` 上下文，做到**绝对的多线程并发加载安全**。
+* **严格栈深度控制**：在 C 胶水层 (`csv_core.c`) 底层直接构建 Lua 二维表，内置精准的 `lua_gettop` 与 `lua_pop` 收割机制，处理数万列宽表也**绝不触发栈溢出 (Stack Overflow)**。
+* **优雅的面向对象封装 (`csv.lua`)**：上层提供符合 Lua 习惯的 OOP 元表支持，内置解构迭代器 `lines()`、按列定制排序 `sort()`，以及基于哈希表 O(N+M) 极速对比的 `diff()` 工具。
 
-### 2. Total Commander 查看器插件 (`wlx_csv`)
-
-* ⚡ **极速大表加载**：在 Total Commander 中按下 `F3` 或 `Ctrl+Q`，数万行数据瞬间渲染成原生 Win32 ListView，拒绝 Web / Electron 方案的臃肿迟钝。
-* 📐 **表头列数自适应动态扩展**：打破旧版“仅靠第一行建列”的死板限制。在解析过程中，只要后续数据行遇到更宽的列，ListView 会立刻自动创建新表头，保证字段**不丢列、不越界**。
-* 🎨 **原生无损转义展示**：借助底层原地脱壳引擎，表格内直接显示洗净后的纯粹文本，不再出现丑陋的双重双引号；内置自适应 UTF-8 到 Win32 ANSI/ACP 编码转换，中文不乱码。
-* ↕️ **智能排序与极速列复制**：自动根据单元格内容长度计算并撑开初始列宽；支持点击表头正倒序快速排序，支持选中多行列数据并一键复制为标准 CSV 文本格式 (`lc_copy`)。
+### 3. Total Commander 极速插件 (`wlx_csv`)
+* **告别 Web/Electron 臃肿**：在 TC 中按下 `F3` 或 `Ctrl+Q`，数万行大表毫秒级直接渲染为 Win32 原生 ListView 控件。
+* **表头动态自适应扩展**：打破旧版“仅在第一行建列”的死板限制。解析过程中只要后续数据行遇到更大列号，ListView 立即自动追加新表头，保证数据**不丢列、不越界**。
+* **原生无损呈现与导出**：表格内直接展示底层的脱壳干净文本（不再带有丑陋的双重引号），并支持多行选中一键复制为标准 CSV 格式 (`lc_copy`)。
 
 ---
 
-## 📦 项目结构 (Project Structure)
+## 📦 仓库目录结构
 
 ```text
 csv-parser-ragel/
-├── parser/
-│   ├── csv_parser.rl    # Ragel 状态机语法定义与核心引擎源码
-│   ├── csv_parser.c     # 由 Ragel -G2 生成的高性能 C 语言目标文件
-│   └── csv_parser.h     # 外部 C/C++ / Lua 调用的公共头文件
-├── test/
-│   ├── test.c           # C89 规范的命令行基准测试与检验程序
-│   └── dirty_words.csv  # 游戏屏蔽词/非法词汇测试表 (3000+ 行复杂配置)
+├── src/
+│   ├── csv_parser.rl    # Ragel 状态机语法规则源文件
+│   ├── csv_parser.c     # Ragel -G2 编译生成的极致性能 C 目标代码
+│   └── csv_parser.h     # 核心 C 语言导出头文件
+├── lua/
+│   ├── csv_core.c       # Lua C-API 胶水层 (TLS 线程安全与栈控制)
+│   └── csv.lua          # Lua 面向对象上层封装模块
 ├── wlx/
-│   ├── wlx_csv.c        # Total Commander Lister (.wlx) 插件核心实现
-│   └── listplug.h       # Total Commander Lister Plugin SDK 头文件
-└── README.md            # 项目说明文档
+│   ├── wlx_csv.c        # Total Commander Lister 插件核心逻辑
+│   ├── listplug.h       # TC Lister Plugin SDK 头文件
+│   └── listplug.def     # DLL 导出符号定义
+├── test/
+│   └── test.c           # C 语言基准测试与命令行检验程序
+└── Premake5.lua         # 跨平台自动化构建脚本
 
 ```
 
 ---
 
-## 🛠️ 编译与构建 (Build & Compile)
+## 🛠️ 构建与编译
 
-### 1. 编译 Ragel 状态机
+本项目采用 **Premake5** 进行跨平台工程管理，默认支持 Visual Studio 与 Make / GCC 体系。
 
-如果你修改了 `parser/csv_parser.rl` 的语法规则，请使用 Ragel 的 `-G2` 参数（生成极速 `goto` 转移代码）将其编译为 C 源码：
+### 1. 生成工程文件
+
+在项目根目录下打开命令行，根据你的目标开发环境执行：
 
 ```bash
-ragel -G2 -C parser/csv_parser.rl -o parser/csv_parser.c
+# 生成 Visual Studio 2010 解决方案 (.sln)
+premake5 vs2010
+
+# 或生成 Visual Studio 2019 / 2022 解决方案
+premake5 vs2022
+
+# 或生成 GNU Makefile (Linux / macOS)
+premake5 gmake2
 
 ```
 
-### 2. 使用 MSVC / VS2010 编译
+### 2. 重新编译 Ragel 状态机 (可选)
 
-打开 **Visual Studio 2010 Command Prompt** 或在现代 MSVC / GCC 环境下，直接执行：
+如果你修改了 `src/csv_parser.rl` 中的文法规则，请使用 Ragel 工具将生成的 C 源码重新覆写：
 
-```cmd
-:: 编译命令行测试工具
-cl /TC /O2 /EHsc /I"parser" test/test.c parser/csv_parser.c /Fe:test_csv.exe
-
-:: 运行测试：加载游戏屏蔽词表
-test_csv.exe dirty_words.csv
+```bash
+ragel -G2 -C src/csv_parser.rl -o src/csv_parser.c
 
 ```
 
-*注：在 VS2010 中请确保所有源码文件以 **“Unicode (UTF-8 带签名) - 代码页 65001” (UTF-8 with BOM)** 编码保存，以消除 `warning C4819` 字符集告警。*
+*(注：项目仓库内已包含由 Ragel 生成的最新版 `csv_parser.c`，若不修改语法规则，无需安装 Ragel 即可直接编译 C/C++ 代码)*。
 
 ---
 
-## 💻 API 与接入指南 (API & Usage)
+## 💻 快速上手指南
 
-### C 语言基础调用
+### Lua 脚本调用示例
 
-`csv_parser` 隐藏了所有内部复杂的游标和状态结构，仅对外暴露最纯净的两个解析函数和一个闭包回调接口：
+将编译生成的模块（`core.dll` 或 `core.so` 放入 `lua/csv/` 目录中），配合 `csv.lua` 即可获得极其丝滑的加载体验：
+
+```lua
+local csv = require 'csv'
+
+-- 1. 极速打开并解析本地文件（如 3000+ 行游戏敏感词库）
+local my_table = csv.open("dirty_words.csv")
+print("成功加载配置表，总行数: ", #my_table)
+
+-- 2. 使用内建方法格式化打印到控制台
+my_table:print()
+
+-- 3. 使用极速解构迭代器遍历数据
+for id, word, replace_str in my_table:lines() do
+    if id == "10086" then
+        print("找到敏感词条目:", word)
+    end
+end
+
+-- 4. 自定义排序：按第一列 ID 倒序排列
+my_table:sort(function(a, b) 
+    return (tonumber(a[1]) or 0) > (tonumber(b[1]) or 0) 
+end)
+
+-- 5. 插入新行并写回磁盘文件
+my_table:insert({"99999", "外挂自动打怪", "*"})
+my_table:write("dirty_words_latest.csv")
+
+```
+
+### C 语言底层调用示例
 
 ```c
 #include <stdio.h>
 #include "csv_parser.h"
 
-/* 1. 定义解析回调函数 (field 已被底层安全截断并在末尾打上 '\0') */
-void on_my_cell(void *ctx, int row_idx, int col_idx, const char *field, size_t field_len) {
-    printf("Row: %d, Col: %d, Text: [%s], Length: %zu\n", 
+/* 定义极速内存回调：field 已由底层完成零拷贝脱壳并在末尾置 '\0' */
+static void on_my_cell(void *ctx, int row_idx, int col_idx, const char *field, size_t field_len) {
+    printf("Row: %d, Col: %d, Text: [%s], Len: %zu\n", 
            row_idx, col_idx, field, field_len);
 }
 
 int main() {
-    /* 2. 直接直接读取并解析物理文件 */
+    /* 直接调用物理文件读取接口，内部自动 fseek 动态分配精准缓冲 */
     int total_rows = csv_parse_file("config/data.csv", on_my_cell, NULL);
     
     if (total_rows < 0) {
-        printf("解析失败：文件不存在或存在严重的 CSV 语法破损！\n");
+        printf("解析错误：文件不存在或发生严重的语法断裂！\n");
     } else {
-        printf("成功解析 %d 行数据！\n", total_rows);
+        printf("完美无损解析完成！共处理 %d 行数据。\n", total_rows);
     }
     return 0;
 }
 
 ```
 
-### 绑定 Lua 虚拟机 / 前缀树
-
-借助 `void *ctx` 上下文指针，可以极其丝滑地将 C 扩展与 Lua 虚拟机或外部数据结构协同：
-
-```c
-/* 把 CSV 屏蔽词库直接刷入 Lua Table */
-static void push_to_lua_table(void *ctx, int row, int col, const char *text, size_t len) {
-    lua_State *L = (lua_State *)ctx;
-    
-    /* 假设我们在加载配置表的第 2 列 (col == 1，词条正文) */
-    if (col == 1) {
-        lua_pushlstring(L, text, len);
-        lua_rawseti(L, -2, row + 1); /* Lua 数组索引从 1 开始 */
-    }
-}
-
-/* 在 Lua C-API 扩展库中注册： */
-int l_load_dirty_words(lua_State *L) {
-    const char *filepath = luaL_checkstring(L, 1);
-    lua_newtable(L); /* 创建结果 Table 压入栈顶 */
-    
-    csv_parse_file(filepath, push_to_lua_table, (void *)L);
-    return 1; /* 返回解析好的 Table */
-}
-
-```
-
 ---
 
-## 📊 性能表现 (Performance)
+## 📊 性能表现与设计对比
 
-在实际游戏环境（3400+ 行、8100+ 个单元格、包含大量正则、连续双引号与 URL 网址的屏蔽词配置表）中的基准测试表现：
+在实际游戏开发场景（3400+ 行、8100+ 个单元格、包含大量连续转义双引号 `""` 与 URL 链接的词库表）下的实测对照：
 
-| 评价维度 | 传统手写循环 / 正则切片 | Ragel 2.0 纯状态机引擎 (`csv_parser`) |
+| 评估维度 | 传统 Lua / Python 正则切片 | Ragel 2.0 纯状态机引擎 (`csv_parser`) |
 | --- | --- | --- |
-| **I/O + 完整语法脱壳耗时** | ~50 ms - 200 ms | **~0.5 ms (500 μs)** |
-| **纯内存语法解析耗时** | ~10 ms | **< 100 μs (微秒级)** |
-| **内存分配开销 (GC / Malloc)** | 随着列数激增产生上万个微型字符串内存碎块 | **零堆碎块 (Zero-Copy 内存覆写)** |
-| **转义双引号 (`""`) 处理** | 依赖二次字符遍历或正则表达式正则替换 | **快慢指针原地覆盖洗净** |
+| **整体 I/O 与解析耗时** | ~50 ms - 200 ms | **~0.5 ms (500 μs)** |
+| **纯内存文法状态转移耗时** | ~10 ms | **< 100 μs (微秒级)** |
+| **内存分配与 GC 碎块** | 随单元格数量激增，产生数万个微型字符串堆碎块 | **零堆碎块 (快慢指针原生内存覆写)** |
+| **多线程并发安全性** | 需依赖全局锁或独立虚拟机实例 | **原生线程安全 (TLS 局部上下文闭包)** |
 
 ---
 
 ## 📄 许可证 (License)
 
-MIT License. Authored by **LeeoNix**.
+MIT License.
 
-*Dedicated to high-performance C programming and old-school hacker aesthetics.*
+Authored & Maintained by **LeeoNix**.
+
+*Dedicated to high-performance C programming and old-school Win32 hacker aesthetics.*
